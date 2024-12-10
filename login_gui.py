@@ -7,7 +7,7 @@ import user_management as um
 import registerpac_gui as registerpac  # Importar el módulo para la gestión de pacientes
 import register_gui
 from registerpac_gui import PatientManagementApp
-
+import os
 
 class LoginApp:
     def __init__(self, root):

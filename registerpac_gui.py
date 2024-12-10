@@ -86,7 +86,7 @@ class PatientManagementApp:
         )
 
         # Creación de la tabla con las columnas
-        columns = ("id", "DNI", "Nombres", "Apellidos", "Fecha Nacimiento", "Sexo", "Número", "Correo", "Dirección")
+        columns = ("paciente_id", "DNI", "Nombres", "Apellidos", "Fecha Nacimiento", "Sexo", "Número", "Correo", "Dirección")
         self.table = ttk.Treeview(self.root, columns=columns, show="headings", selectmode="browse")
 
         # Configuración de encabezados y columnas
@@ -141,7 +141,7 @@ class PatientManagementApp:
                 database="sistema_dental"
             )
             cursor = connection.cursor()
-            cursor.execute("SELECT * FROM pacientesd")
+            cursor.execute("SELECT * FROM pacientescli")
             patients_data = cursor.fetchall()
 
             for patient in patients_data:
@@ -157,7 +157,7 @@ class PatientManagementApp:
                 connection.close()
 
     def filter_patients(self):
-        """Filtrar pacientes basado en el término de búsqueda."""
+        """Filtrar pacientescli basado en el término de búsqueda."""
         search_term = self.search_entry.get().strip()
         if not search_term:
             messagebox.showwarning("Advertencia", "Por favor, ingrese un término de búsqueda.")
@@ -176,7 +176,7 @@ class PatientManagementApp:
             )
             cursor = connection.cursor()
             query = """
-            SELECT * FROM pacientesd 
+            SELECT * FROM pacientescli 
             WHERE DNI LIKE %s OR Nombres LIKE %s OR Apellidos LIKE %s
             """
             search_query = f"%{search_term}%"
@@ -228,7 +228,7 @@ class PatientManagementApp:
                     database="sistema_dental"
                 )
                 cursor = connection.cursor()
-                cursor.execute("DELETE FROM pacientesd WHERE id = %s", (patient_id,))
+                cursor.execute("DELETE FROM pacientescli WHERE paciente_id = %s", (patient_id,))
                 connection.commit()
                 self.load_patients()
                 messagebox.showinfo("Éxito", "Paciente eliminado correctamente.")
@@ -350,7 +350,7 @@ class RegisterPatientForm:
             )
             cursor = connection.cursor()
             cursor.execute("""
-                INSERT INTO pacientesd (DNI, Nombres, Apellidos, FechaNacimiento, Sexo, Numero, Correo, Direccion)
+                INSERT INTO pacientescli (DNI, Nombres, Apellidos, FechaNacimiento, Sexo, Numero, Correo, Direccion)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             """, (dni, nombres, apellidos, fecha_nacimiento, sexo, numero, correo, direccion))
             connection.commit()
@@ -459,9 +459,9 @@ class EditPatientForm:
             )
             cursor = connection.cursor()
             cursor.execute("""
-                UPDATE pacientesd
+                UPDATE pacientescli
                 SET DNI=%s, Nombres=%s, Apellidos=%s, FechaNacimiento=%s, Sexo=%s, Numero=%s, Correo=%s, Direccion=%s
-                WHERE id=%s
+                WHERE paciente_id=%s
             """, (dni, nombres, apellidos, fecha_nacimiento, sexo, numero, correo, direccion, self.patient_id))
             connection.commit()
             messagebox.showinfo("Éxito", "Paciente editado correctamente.")

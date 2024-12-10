@@ -1,0 +1,7 @@
+2024-12-06 20:05:07,906 - INFO - Paciente: Juan Pérez, Diagnóstico: Posible quiste, Tiempo: 2.91 segundos
+2024-12-06 20:05:10,025 - INFO - Paciente: Ana Gómez, Diagnóstico: Posible tumor, Tiempo: 2.12 segundos
+2024-12-06 20:05:12,156 - INFO - Paciente: Luis Martínez, Diagnóstico: Posible quiste, Tiempo: 2.13 segundos
+2024-12-06 20:05:14,315 - INFO - Paciente: Sofía López, Diagnóstico: Posible quiste, Tiempo: 2.16 segundos
+2024-12-06 20:05:16,494 - INFO - Paciente: Carlos Fernández, Diagnóstico: Posible tumor, Tiempo: 2.18 segundos
+2024-12-06 20:05:16,515 - INFO - Reducción promedio: 0.92 segundos
+2024-12-06 20:05:16,515 - INFO - Porcentaje de reducción: 40.00%

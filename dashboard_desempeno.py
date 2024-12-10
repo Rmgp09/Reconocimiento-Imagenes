@@ -53,7 +53,7 @@ def mostrar_tarjetas():
     """
     Muestra las tarjetas de información en la parte superior.
     """
-    pacientes = obtener_datos("SELECT COUNT(*) AS total_pacientes FROM pacientesd;")
+    pacientes = obtener_datos("SELECT COUNT(*) AS total_pacientes FROM pacientescli;")
     roles = obtener_datos("SELECT rol, COUNT(*) AS total FROM usuarios GROUP BY rol;")
     diagnosticos = obtener_datos("SELECT diagnostico, COUNT(*) AS total FROM reportesd GROUP BY diagnostico;")
 
@@ -95,7 +95,7 @@ def mostrar_graficos():
     limpiar_graficos()
     
     # Consultar datos para el gráfico circular
-    sexo_distribucion = obtener_datos("SELECT sexo, COUNT(*) AS total FROM pacientesd GROUP BY sexo;")
+    sexo_distribucion = obtener_datos("SELECT sexo, COUNT(*) AS total FROM pacientescli GROUP BY sexo;")
     
     # Consultar datos para el gráfico de barras
     diagnosticos = obtener_datos("SELECT diagnostico, COUNT(*) AS total FROM reportesd GROUP BY diagnostico;")
@@ -115,7 +115,7 @@ def mostrar_graficos():
         explode=explode,
         shadow=True
     )
-    ax1.set_title("Distribución por Sexo", fontsize=12, weight='bold')
+    ax1.set_title("Distribución por Genero", fontsize=12, weight='bold')
 
     canvas1 = FigureCanvasTkAgg(fig1, master=graficos_frame)
     canvas1.draw()

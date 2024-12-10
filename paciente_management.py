@@ -24,7 +24,7 @@ class PatientManagementApp:
 
     def setup_ui(self):
         # Tabla de pacientes
-        columns = ("id", "DNI", "Nombres", "Apellidos", "Fecha Nacimiento", "Sexo", "Número", "Correo", "Dirección")
+        columns = ("paciente_id", "DNI", "Nombres", "Apellidos", "Fecha Nacimiento", "Sexo", "Número", "Correo", "Dirección")
         self.table = ttk.Treeview(self.root, columns=columns, show="headings", selectmode="browse")
         
         for col in columns:
@@ -49,7 +49,7 @@ class PatientManagementApp:
         try:
             connection = mysql.connector.connect(**db_config)
             cursor = connection.cursor()
-            cursor.execute("SELECT * FROM pacientesd")
+            cursor.execute("SELECT * FROM pacientescli")
             patients_data = cursor.fetchall()
 
             for patient in patients_data:
@@ -58,7 +58,7 @@ class PatientManagementApp:
                 self.table.insert("", "end", values=patient)
 
         except mysql.connector.Error as err:
-            messagebox.showerror("Error", f"No se pudo cargar la lista de pacientes: {err}")
+            messagebox.showerror("Error", f"No se pudo cargar la lista de pacientescli: {err}")
         finally:
             if connection.is_connected():
                 cursor.close()
@@ -90,7 +90,7 @@ class PatientManagementApp:
             try:
                 connection = mysql.connector.connect(**db_config)
                 cursor = connection.cursor()
-                cursor.execute("DELETE FROM pacientesd WHERE id = %s", (patient_id,))
+                cursor.execute("DELETE FROM pacientescli WHERE paciente_id = %s", (patient_id,))
                 connection.commit()
                 self.load_patients()
                 messagebox.showinfo("Éxito", "Paciente eliminado correctamente.")
@@ -182,7 +182,7 @@ class RegisterPatientForm:
             connection = mysql.connector.connect(**db_config)
             cursor = connection.cursor()
             query = """
-            INSERT INTO pacientesd (dni, nombres, apellidos, fechanacimiento, sexo, numero, correo, direccion)
+            INSERT INTO pacientescli (dni, nombres, apellidos, fechanacimiento, sexo, numero, correo, direccion)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             """
             cursor.execute(query, data)

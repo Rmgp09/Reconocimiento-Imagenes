@@ -1,5 +1,7 @@
 # app_gui.py
 
+import fitz
+from fpdf import FPDF
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 from tkinter import filedialog, messagebox, Menu, Toplevel
@@ -12,6 +14,7 @@ import user_management as um  # Asegúrate de que user_management esté importad
 from reportlab.pdfgen import canvas 
 import mysql.connector
 from io import BytesIO
+import os
 import uuid
 
 class DentalDetectionSystem:
@@ -149,11 +152,14 @@ class DentalDetectionSystem:
 
     def detect_anomalies(self):
         if self.original_image is not None:
+            # Suponiendo que detect_anomalies devuelve una imagen procesada y un diagnóstico
             result_image, diagnosis = self.image_processor.detect_anomalies(self.original_image)
-            if result_image is not None:
+            
+            if result_image is not None and diagnosis:
                 self.processed_image = result_image  # Asignar la imagen procesada
                 self.display_image(result_image, self.panel_processed)
-                self.patient_manager.store_diagnosis(diagnosis)
+                self.diagnosis = diagnosis  # Guardar el diagnóstico obtenido
+                self.patient_manager.store_diagnosis(diagnosis)  # Almacenar en el sistema
                 messagebox.showinfo("Diagnóstico", diagnosis)
             else:
                 messagebox.showerror("Error", "No se pudo procesar la imagen.")
@@ -261,12 +267,12 @@ class DentalDetectionSystem:
         else:
             messagebox.showerror("Error", "No se pudo actualizar el perfil.")
 
-    def calculate_age(self, birthdate_str):
+    def calculate_age(self, fecha_nacimiento_str):
         """Calcular la edad basado en la fecha de nacimiento en formato 'YYYY-MM-DD'"""
         try:
-            birthdate = datetime.datetime.strptime(birthdate_str, "%Y-%m-%d")
+            fecha_nacimiento = datetime.datetime.strptime(fecha_nacimiento_str, "%Y-%m-%d")
             today = datetime.datetime.today()
-            return today.year - birthdate.year - ((today.month, today.day) < (birthdate.month, birthdate.day))
+            return today.year - fecha_nacimiento.year - ((today.month, today.day) < (fecha_nacimiento.month, fecha_nacimiento.day))
         except ValueError:
             return "Desconocido"  # Si el formato de la fecha es incorrecto
 
@@ -285,100 +291,87 @@ class DentalDetectionSystem:
         # Información del paciente y odontólogo
         patient_name = self.current_patient.get("nombre_completo", "N/A")
         patient_dni = self.current_patient.get("dni", "N/A")
-        patient_age = self.calculate_age(self.current_patient.get("fecha_nacimiento", "N/A"))
+        patient_age = self.current_patient.get("edad", "N/A")
         dentist_name = f"{self.logged_in_user.get('first_name', '')} {self.logged_in_user.get('last_name', '')}"
         dentist_email = self.logged_in_user.get("correo", "N/A")
-        diagnosis = "Posible anomalía detectada"
+        diagnostico = getattr(self, 'diagnosis', "No se detectó anomalía.")  # Usar el diagnóstico detectado o uno predeterminado
         observations = "La región superior presenta signos de desgaste dental."
         report_date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         # Generar el PDF en memoria y guardar su referencia lógica
         self.generate_pdf_report_with_path(
             patient_name, patient_dni, patient_age,
-            dentist_name, dentist_email, diagnosis,
+            dentist_name, dentist_email, diagnostico,
             observations, report_date
         )
 
 
-    def generate_pdf_report_with_path(self, patient_name, patient_dni, patient_age,
-                                    dentist_name, dentist_email, diagnosis,
-                                    observations, report_date):
-        """Generar un reporte clínico en PDF y guardar su referencia lógica en la base de datos."""
-        # Crear el PDF en un buffer de memoria
-        buffer = BytesIO()
-        c = canvas.Canvas(buffer)
 
-        # Título del reporte
-        c.setFont("Helvetica-Bold", 16)
-        c.drawString(200, 800, "Reporte Clínico Dental")
+    def generate_pdf_report_with_path(self, patient_name, patient_dni, patient_age, dentist_name, dentist_email, diagnosis, observations, report_date):
+        """Generar un PDF con la información del paciente y el odontólogo, junto con la imagen procesada"""
+        # Crear una nueva instancia de FPDF
+        pdf = FPDF()
+        pdf.set_auto_page_break(auto=True, margin=15)
+        pdf.add_page()
 
-        # Datos del paciente
-        c.setFont("Helvetica", 12)
-        c.drawString(50, 750, f"Paciente: {patient_name}")
-        c.drawString(50, 730, f"DNI: {patient_dni}")
-        c.drawString(50, 710, f"Edad: {patient_age} años")
+        # Configurar título
+        pdf.set_font("Arial", 'B', 16)
+        pdf.cell(200, 10, txt="Reporte Clínico Dental", ln=True, align="C")
+        pdf.ln(10)
 
-        # Datos del odontólogo
-        c.drawString(50, 680, f"Odontólogo: {dentist_name}")
-        c.drawString(50, 660, f"Correo: {dentist_email}")
+        # Información del paciente
+        pdf.set_font("Arial", 'B', 12)
+        pdf.cell(0, 10, f"Paciente: {patient_name}", ln=True)
+        pdf.cell(0, 10, f"DNI: {patient_dni}", ln=True)
+        pdf.cell(0, 10, f"Edad: {patient_age if patient_age != 'Desconocido' else 'Desconocido'} años", ln=True)
+        pdf.ln(5)
 
-        # Diagnóstico y observaciones
-        c.drawString(50, 630, f"Diagnóstico: {diagnosis}")
-        c.drawString(50, 610, "Observaciones:")
-        c.drawString(70, 590, observations)
+        # Información del odontólogo
+        pdf.set_font("Arial", 'B', 12)
+        pdf.cell(0, 10, f"Odontólogo: {dentist_name}", ln=True)
+        pdf.cell(0, 10, f"Correo: {dentist_email}", ln=True)
+        pdf.ln(10)
 
-        # Fecha del reporte
-        c.drawString(50, 560, f"Fecha del Reporte: {report_date}")
+        # Información sobre el reporte
+        pdf.set_font("Arial", 'B', 12)
+        pdf.cell(0, 10, f"Fecha del Reporte: {report_date}", ln=True)
+        pdf.ln(5)
 
-        # Finalizar el PDF en el buffer
-        c.save()
-        buffer.seek(0)  # Volver al inicio del buffer
+        # Agregar diagnóstico
+        pdf.set_font("Arial", size=12, style="B")
+        pdf.cell(0, 10, "Diagnóstico:", ln=True)
+        pdf.set_font("Arial", size=12)
+        pdf.multi_cell(0, 10, diagnosis)
+        pdf.ln(10)
+        
+        # Observaciones
+        pdf.cell(0, 10, f"Observaciones: ", ln=True)
+        pdf.multi_cell(0, 10, observations)
+        pdf.ln(10)
 
-        # Generar una referencia lógica para `pdf_path`
-        pdf_reference = str(uuid.uuid4()) + ".pdf"  # Usar un UUID único como referencia
+        # Línea de separación
+        pdf.set_draw_color(0, 0, 0)  # Color de la línea (negro)
+        pdf.line(10, pdf.get_y(), 200, pdf.get_y())  # Dibujar una línea horizontal
+        pdf.ln(10)
 
-        # Guardar el reporte en la base de datos
-        self.save_report_to_db_with_path(
-            paciente_id=self.current_patient.get("id", 0),
-            diagnostico=diagnosis,
-            observaciones=observations,
-            pdf_path=pdf_reference  # Guardar el nombre lógico en pdf_path
-        )
+        # Incluir la imagen procesada
+        if self.processed_image is not None:
+            # Guardar la imagen temporalmente
+            temp_image_path = "temp_image.jpg"
+            cv2.imwrite(temp_image_path, self.processed_image)  # Guardar la imagen procesada
+            pdf.image(temp_image_path, x=10, y=pdf.get_y(), w=180)
+            os.remove(temp_image_path)  # Eliminar la imagen temporal
 
-        messagebox.showinfo("Éxito", f"Reporte generado y guardado con referencia {pdf_reference}.")
+        # Ruta absoluta en Windows (cambiar 'TuUsuario' por el nombre de tu usuario)
+        output_pdf_path = os.path.join("D:\Documentos\deep learning para vison artificial\Reportes", f"reporte_{patient_dni}_{report_date.replace(':', '_').replace(' ', '_')}.pdf")
 
-    import mysql.connector
+        # Guardar el PDF en un archivo
+        output_pdf_path = f"reporte_{patient_dni}_{report_date.replace(':', '_').replace(' ', '_')}.pdf"
+        pdf.output(output_pdf_path)
 
-    def save_report_to_db_with_path(self, paciente_id, diagnostico, observaciones, pdf_path):
-        """Guardar el reporte en la base de datos con la referencia lógica del PDF."""
-        try:
-            connection = mysql.connector.connect(
-                host="localhost",
-                database="sistema_dental",
-                user="root",  # Cambia por tu usuario
-                password="renzo"  # Cambia por tu contraseña
-            )
-
-            if connection.is_connected():
-                cursor = connection.cursor()
-
-                # Insertar el reporte con la referencia en pdf_path
-                sql_query = """
-                INSERT INTO reportes (paciente_id, diagnostico, observaciones, pdf_path)
-                VALUES (%s, %s, %s, %s)
-                """
-                data = (paciente_id, diagnostico, observaciones, pdf_path)
-                cursor.execute(sql_query, data)
-                connection.commit()
-
-                print(f"Reporte guardado exitosamente con ID: {cursor.lastrowid}")
-
-        except mysql.connector.Error as e:
-            messagebox.showerror("Error", f"No se pudo guardar el reporte: {e}")
-        finally:
-            if connection.is_connected():
-                cursor.close()
-                connection.close()
+        # Mostrar un mensaje al usuario
+        messagebox.showinfo("Reporte Generado", f"El reporte clínico ha sido generado con éxito: {output_pdf_path}")
+        return output_pdf_path
 
 
 if __name__ == "__main__":
